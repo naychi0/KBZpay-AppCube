@@ -10,6 +10,7 @@ const getApiUrl = (path) => {
   return `https://uat-miniapp.kbzpay.com${path}`; 
 };
 
+
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [searchQuery, setSearchQuery] = useState('');
@@ -157,12 +158,23 @@ export default function App() {
     setLoading(true);
     const requestUrl = getApiUrl("/service/ABH008_KST__Education/1.0.1/enrollment/request");
     try {
+      const centerId = selectedCenter?.center_id ?? selectedCenter?.id ?? "";
+      const courseId = course?.id ?? course?.course_id ?? "";
+      if (!centerId || !courseId) {
+        console.error("Enrollment request missing IDs", { centerId, courseId, selectedCenter, course });
+        alert("Unable to enroll: missing center or course id.");
+        return;
+      }
       const response = await fetch(requestUrl, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json', 'client_id': import.meta.env.VITE_CLIENT_ID },
-        body: JSON.stringify({ center_id: selectedCenter?.center_id || "", course_id: course.id || course.course_id || "" })
+        body: JSON.stringify({ center_id: centerId, course_id: courseId })
       });
       const data = await response.json();
+      if (!response.ok) {
+        console.error("Enrollment request failed", response.status, data);
+        throw new Error(data?.resMsg || "Enrollment request failed");
+      }
       if (data.resCode === "0") { setEnrollmentRequestData(data.result); setCurrentPage('confirm'); }
     } catch (error) {} finally { setLoading(false); }
   };
@@ -550,8 +562,8 @@ const ConfirmEnrollView = ({ data, selectedCenter, onRegister, onBack }) => {
         <div style={{ marginBottom: '30px' }}>
           <div className="summary-row"><span className="summary-label"><MapPin size={16} /> Center Name</span><span className="summary-value">{selectedCenter?.name || "N/A"}</span></div>
           <div className="summary-row"><span className="summary-label"><BookOpenText size={16} /> Course</span><span className="summary-value" style={{ color: '#0054A6' }}>{summary.course_name || "N/A"}</span></div>
-          <div className="summary-row"><span className="summary-label"><User size={16} /> Student Name</span><span className="summary-value">{summary.student_info?.name || userProfile?.name || "User"}</span></div>
-          <div className="summary-row" style={{ borderBottom: 'none', marginTop: '10px' }}><span className="summary-label" style={{ fontSize: '16px', color: '#111' }}>Total Amount</span><span className="summary-value" style={{ fontSize: '18px', color: '#0054A6' }}>{Number(actualPrice).toLocaleString('en-US')} MMK</span></div>
+          <div className="summary-row"><span className="summary-label"><User size={16} /> Student Name</span><span className="summary-value">{summary.student_info?.name || "User"}</span></div>
+          <div className="summary-row" style={{ borderBottom: 'none', marginTop: '10px' }}><span className="summary-label" style={{ fontSize: '16px', color: '#111' }}>Total Amount</span><span className="summary-value" style={{ fontSize: '18px', color: '#0054A6' }}>{Number(actualPrice).toLocaleString()} MMK</span></div>
         </div>
         <div style={{ display: 'flex', gap: '15px', marginTop: 'auto' }}>
             <button onClick={onBack} className="clickable" style={{ flex: 1, backgroundColor: '#f0f0f0', color: '#333', border: 'none', padding: '16px', borderRadius: '16px', fontWeight: 'bold', fontSize: '15px' }}>Back</button>
