@@ -157,12 +157,23 @@ export default function App() {
     setLoading(true);
     const requestUrl = getApiUrl("/service/ABH008_KST__Education/1.0.1/enrollment/request");
     try {
+      const centerId = selectedCenter?.center_id ?? selectedCenter?.id ?? "";
+      const courseId = course?.id ?? course?.course_id ?? "";
+      if (!centerId || !courseId) {
+        console.error("Enrollment request missing IDs", { centerId, courseId, selectedCenter, course });
+        alert("Unable to enroll: missing center or course id.");
+        return;
+      }
       const response = await fetch(requestUrl, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json', 'client_id': import.meta.env.VITE_CLIENT_ID },
-        body: JSON.stringify({ center_id: selectedCenter?.center_id || "", course_id: course.id || course.course_id || "" })
+        body: JSON.stringify({ center_id: centerId, course_id: courseId, fullname: "kyaw kyaw" })
       });
       const data = await response.json();
+      if (!response.ok) {
+        console.error("Enrollment request failed", response.status, data);
+        throw new Error(data?.resMsg || "Enrollment request failed");
+      }
       if (data.resCode === "0") { setEnrollmentRequestData(data.result); setCurrentPage('confirm'); }
     } catch (error) {} finally { setLoading(false); }
   };
