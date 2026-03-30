@@ -538,7 +538,8 @@ const RegistrationFormView = ({ userProfile, enrollmentData, onConfirm, onBack }
       <div className="overlay-card">
         <h3 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '8px', color: '#111' }}>Registration</h3>
         <p style={{ color: '#888', fontSize: '13px', marginBottom: '30px' }}>Please check your credentials to proceed.</p>
-        <div className="modern-input-container"><span className="modern-input-label">Username</span><div className="modern-input-group"><User size={18} /><input type="text" defaultValue={student.name || ""} placeholder="Enter your name" /></div></div>
+        {/* TODO: please insert fullname from autologin instead of "Kyaw Kyaw" */}
+        <div className="modern-input-container"><span className="modern-input-label">Username</span><div className="modern-input-group"><User size={18} /><input type="text" defaultValue="Kyaw Kyaw" placeholder="Enter your name" /></div></div>
         <div className="modern-input-container"><span className="modern-input-label">Phone number</span><div className="modern-input-group"><Phone size={18} /><input type="text" defaultValue={student.phone || ""} placeholder="09xxxxxxxxx" /></div></div>
         <div className="modern-input-container" style={{ marginBottom: '40px' }}><span className="modern-input-label">Education Background</span><div className="modern-input-group"><FileText size={18} /><input type="text" defaultValue={student.education_background || "High School Graduate"} placeholder="e.g. B.Sc, High School" /></div></div>
         <button onClick={onConfirm} className="clickable" style={{ backgroundColor: '#0054A6', color: 'white', border: 'none', padding: '16px', borderRadius: '16px', fontWeight: 'bold', fontSize: '15px', marginTop: 'auto' }}>Confirm & Proceed</button>
