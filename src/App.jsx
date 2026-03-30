@@ -96,7 +96,9 @@ export default function App() {
 
   const fetchHistoryData = async () => {
     setLoading(true);
-    const historyUrl = getApiUrl("/service/ABH008_KST__Education/1.0.1/enrollments/history"); 
+    // TODO: please insert fullname from autologin instead of "Kyaw Kyaw"
+    const historyName = "Kyaw Kyaw";
+    const historyUrl = getApiUrl(`/service/ABH008_KST__Education/1.0.1/enrollments/history?name=${encodeURIComponent(historyName)}`); 
     try {
       const response = await fetch(historyUrl, {
         method: 'GET',
