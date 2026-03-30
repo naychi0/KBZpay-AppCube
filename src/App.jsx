@@ -459,7 +459,7 @@ const DetailView = ({ center, onBack, onEnrollClick }) => {
                 <div style={{ fontSize: '12px', color: '#0054A6', fontWeight: '700' }}>By: {course.instructor_name || 'Expert'}</div>
               </div>
               <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '90px' }}>
-                <div style={{ fontWeight: '800', fontSize: '15px', color: '#0054A6', marginBottom: '12px' }}>{course.price ? Number(Array.isArray(course.price) ? course.price[0] : course.price).toLocaleString() : 0} <span style={{fontSize:'9px', color:'#888'}}>MMK</span></div>
+                <div style={{ fontWeight: '800', fontSize: '15px', color: '#0054A6', marginBottom: '12px' }}>{course.price ? Number(Array.isArray(course.price) ? course.price[0] : course.price).toLocaleString('en-US') : 0} <span style={{fontSize:'9px', color:'#888'}}>MMK</span></div>
                 <button onClick={() => onEnrollClick(course)} className="clickable confirm-btn" style={{ backgroundColor: '#0054A6', padding: '10px 20px', borderRadius: '15px', fontSize: '12px', color: 'white', border: 'none', fontWeight: 'bold' }}>Enroll</button>
               </div>
             </div>
@@ -550,8 +550,8 @@ const ConfirmEnrollView = ({ data, selectedCenter, onRegister, onBack }) => {
         <div style={{ marginBottom: '30px' }}>
           <div className="summary-row"><span className="summary-label"><MapPin size={16} /> Center Name</span><span className="summary-value">{selectedCenter?.name || "N/A"}</span></div>
           <div className="summary-row"><span className="summary-label"><BookOpenText size={16} /> Course</span><span className="summary-value" style={{ color: '#0054A6' }}>{summary.course_name || "N/A"}</span></div>
-          <div className="summary-row"><span className="summary-label"><User size={16} /> Student Name</span><span className="summary-value">{summary.student_info?.name || "User"}</span></div>
-          <div className="summary-row" style={{ borderBottom: 'none', marginTop: '10px' }}><span className="summary-label" style={{ fontSize: '16px', color: '#111' }}>Total Amount</span><span className="summary-value" style={{ fontSize: '18px', color: '#0054A6' }}>{Number(actualPrice).toLocaleString()} MMK</span></div>
+          <div className="summary-row"><span className="summary-label"><User size={16} /> Student Name</span><span className="summary-value">{summary.student_info?.name || userProfile?.name || "User"}</span></div>
+          <div className="summary-row" style={{ borderBottom: 'none', marginTop: '10px' }}><span className="summary-label" style={{ fontSize: '16px', color: '#111' }}>Total Amount</span><span className="summary-value" style={{ fontSize: '18px', color: '#0054A6' }}>{Number(actualPrice).toLocaleString('en-US')} MMK</span></div>
         </div>
         <div style={{ display: 'flex', gap: '15px', marginTop: 'auto' }}>
             <button onClick={onBack} className="clickable" style={{ flex: 1, backgroundColor: '#f0f0f0', color: '#333', border: 'none', padding: '16px', borderRadius: '16px', fontWeight: 'bold', fontSize: '15px' }}>Back</button>
@@ -587,7 +587,7 @@ const PaymentSuccessView = ({ result, selectedCenter, onDone }) => {
         <div style={{ width: '100%', backgroundColor: '#f8f9fa', borderRadius: '20px', padding: '20px', textAlign: 'left', border: '1px solid #eee', marginBottom: '40px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', fontSize: '14px' }}><span style={{ fontWeight: '700', color: '#555' }}>Center</span><span style={{ fontWeight: '800', color: '#111' }}>{selectedCenter?.name || "N/A"}</span></div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', fontSize: '14px' }}><span style={{ fontWeight: '700', color: '#555' }}>Course</span><span style={{ fontWeight: '800', color: '#0054A6' }}>{courseName}</span></div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', borderTop: '1px dashed #ddd', paddingTop: '15px', marginTop: '5px' }}><span style={{ fontWeight: '700', color: '#555' }}>Amount Paid</span><span style={{ fontWeight: '900', color: '#111' }}>{actualPrice ? `${Number(actualPrice).toLocaleString()} MMK` : "0 MMK"}</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', borderTop: '1px dashed #ddd', paddingTop: '15px', marginTop: '5px' }}><span style={{ fontWeight: '700', color: '#555' }}>Amount Paid</span><span style={{ fontWeight: '900', color: '#111' }}>{actualPrice ? `${Number(actualPrice).toLocaleString('en-US')} MMK` : "0 MMK"}</span></div>
         </div>
         <button onClick={onDone} className="clickable" style={{ width: '100%', padding: '16px', borderRadius: '16px', fontSize: '15px', fontWeight: 'bold', border: 'none', backgroundColor: '#0054A6', color: '#fff', marginTop: 'auto' }}>Back to Home</button>
       </div>
@@ -601,26 +601,66 @@ const CourseListView = ({ courses, onEnrollClick, searchQuery, setSearchQuery, o
     <div className="search-container"><span className="search-icon-pos"><Search size={14} color="#888" /></span><input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') onSearch(searchQuery); }} className="search-input" placeholder="Search for courses..." /></div>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', marginBottom: '15px' }}><h2 className="section-title" style={{ margin: 0 }}>Results for "{searchQuery || 'All'}"</h2></div>
     {courses && courses.length > 0 ? courses.map((course, idx) => (
-      <div key={idx} className="center-card"><div style={{ display: 'flex', justifyContent: 'space-between' }}><div><div style={{ fontWeight: '800', fontSize: '15px', color: '#111', marginBottom: '6px' }}>{course.title || course.name}</div><div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>{course.schedule || 'Sat - Sun'}</div><div style={{ fontSize: '12px', color: '#0054A6', fontWeight: '600' }}>{course.instructor_name ? `By: ${course.instructor_name}` : 'Expert'}</div></div><div style={{ textAlign: 'right' }}><div style={{ fontWeight: '800', fontSize: '15px', color: '#0054A6', marginBottom: '12px' }}>{course.price ? `${Number(course.price).toLocaleString()} MMK` : 'Free'}</div><button onClick={() => onEnrollClick(course)} className="clickable" style={{ backgroundColor: '#0054A6', padding: '8px 20px', borderRadius: '12px', fontSize: '12px', border: 'none', color: 'white', fontWeight: 'bold' }}>Enroll</button></div></div></div>
+      <div key={idx} className="center-card"><div style={{ display: 'flex', justifyContent: 'space-between' }}><div><div style={{ fontWeight: '800', fontSize: '15px', color: '#111', marginBottom: '6px' }}>{course.title || course.name}</div><div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>{course.schedule || 'Sat - Sun'}</div><div style={{ fontSize: '12px', color: '#0054A6', fontWeight: '600' }}>{course.instructor_name ? `By: ${course.instructor_name}` : 'Expert'}</div></div><div style={{ textAlign: 'right' }}><div style={{ fontWeight: '800', fontSize: '15px', color: '#0054A6', marginBottom: '12px' }}>{course.price ? `${Number(course.price).toLocaleString('en-US')} MMK` : 'Free'}</div><button onClick={() => onEnrollClick(course)} className="clickable" style={{ backgroundColor: '#0054A6', padding: '8px 20px', borderRadius: '12px', fontSize: '12px', border: 'none', color: 'white', fontWeight: 'bold' }}>Enroll</button></div></div></div>
     )) : (<div style={{ textAlign: 'center', padding: '40px 20px' }}><p style={{ color: '#888', fontWeight: '600' }}>No courses found.</p></div>)}
   </div>
 );
 
-const SchoolListView = ({ centers, onCardClick, searchQuery, setSearchQuery, onSearch }) => (
-  <div style={{ padding: '20px' }}>
-    <div className="search-container"><span className="search-icon-pos"><Search size={14} color="#888" /></span><input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') onSearch(searchQuery); }} className="search-input" placeholder="Search for centers..." /></div>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '25px', marginBottom: '15px' }}><h2 className="section-title" style={{ margin: 0 }}>{searchQuery ? `Results for "${searchQuery}"` : "All Centers"}</h2></div>
-    {centers && centers.length > 0 ? centers.map((center) => (
-      <div key={center.id} className="center-card clickable" onClick={() => onCardClick(center.id)}><div className="card-content"><img src="https://placehold.co/100x80/0054a6/ffffff?text=Center" alt="Center" className="card-image" /><div className="card-text"><h3 className="center-name">{center.name}</h3><div className="center-location"><MapPin size={14} color="#0054A6" style={{ marginRight: '6px'}} /> {center.location || "Yangon"}</div><div className="center-rating"><Star size={14} fill="#ffcc00" color="#ffcc00" strokeWidth={0} style={{ marginRight: '6px'}} /> {center.rating || "4.5"} rating</div></div></div></div>
-    )) : (<div style={{ textAlign: 'center', padding: '40px 20px' }}><p style={{ color: '#888', fontWeight: '600' }}>No centers found.</p></div>)}
-  </div>
-);
+const SchoolListView = ({ centers, onCardClick, searchQuery, setSearchQuery, onSearch }) => {
+  // 🌟 ကျောင်းနာမည်နဲ့ ပုံများကို တွဲပေးမည့် စာရင်း (Mapping) ကို ဒီမှာ ထည့်လိုက်ပါပြီ 🌟
+  const centerImages = {
+    "Strategy First University": "https://strategyfirst.edu.mm/img/icon/s1st-portrait.png",
+    "Language Center": "https://images.seeklogo.com/logo-png/32/1/wall-street-english-logo-png_seeklogo-324833.png",
+    "KMD Center": "https://www.nccedu.com/wp-content/uploads/2021/03/Untitled-design.png",
+    "default": "https://placehold.co/120x120/0054A6/ffffff?text=KBZPay" 
+  };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <div className="search-container">
+        <span className="search-icon-pos"><Search size={14} color="#888" /></span>
+        <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') onSearch(searchQuery); }} className="search-input" placeholder="Search for centers..." />
+      </div>
+      
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '25px', marginBottom: '15px' }}>
+        <h2 className="section-title" style={{ margin: 0 }}>{searchQuery ? `Results for "${searchQuery}"` : "All Centers"}</h2>
+      </div>
+      
+      {centers && centers.length > 0 ? centers.map((center) => {
+        // 🌟 ကျောင်းနာမည်နဲ့ ကိုက်ညီတဲ့ပုံကို ရှာမယ်။ မတွေ့ရင် default ပုံကို ယူမယ် 🌟
+        const imgSrc = centerImages[center.name] || centerImages["default"];
+
+        return (
+          <div key={center.id} className="center-card clickable" onClick={() => onCardClick(center.id)}>
+            <div className="card-content">
+              {/* 🌟 အသေထည့်ထားတဲ့ Link အစား imgSrc ဆိုပြီး ပြောင်းလိုက်ပါပြီ 🌟 */}
+              <img src={imgSrc} alt={center.name} className="card-image" />
+              <div className="card-text">
+                <h3 className="center-name">{center.name}</h3>
+                <div className="center-location">
+                  <MapPin size={14} color="#0054A6" style={{ marginRight: '6px'}} /> {center.location || "Yangon"}
+                </div>
+                <div className="center-rating">
+                  <Star size={14} fill="#ffcc00" color="#ffcc00" strokeWidth={0} style={{ marginRight: '6px'}} /> {center.rating || "4.5"} rating
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }) : (
+        <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+          <p style={{ color: '#888', fontWeight: '600' }}>No centers found.</p>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const HistoryView = ({ histories }) => (
   <div style={{ padding: '20px' }}>
     <h2 className="section-title">Enrollment History</h2>
     {histories && histories.length > 0 ? histories.map((item, idx) => (
-      <div key={item.id || idx} className="center-card" style={{ borderLeft: '6px solid #06C270' }}><div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}><span style={{ fontSize: '11px', color: '#888', fontWeight: '700' }}>{item.enrollment_name || `TXN-${item.transaction_id || "Recent"}`}</span><span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', backgroundColor: '#e2fbe8', color: '#06C270', fontWeight: 'bold' }}>{item.status || "Completed"}</span></div><div style={{ fontWeight: '800', fontSize: '16px', color: '#111', marginBottom: '6px' }}>{item.course?.title || "Unknown Course"}</div><div style={{ fontSize: '13px', color: '#666' }}>{item.center?.name || "Unknown Center"}</div><div style={{ textAlign: 'right', fontWeight: '900', color: '#0054A6', fontSize: '15px', marginTop: '15px' }}>{item.course?.price ? `${Number(item.course.price).toLocaleString()} MMK` : "0 MMK"}</div></div>
+      <div key={item.id || idx} className="center-card" style={{ borderLeft: '6px solid #06C270' }}><div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}><span style={{ fontSize: '11px', color: '#888', fontWeight: '700' }}>{item.enrollment_name || `TXN-${item.transaction_id || "Recent"}`}</span><span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', backgroundColor: '#e2fbe8', color: '#06C270', fontWeight: 'bold' }}>{item.status || "Completed"}</span></div><div style={{ fontWeight: '800', fontSize: '16px', color: '#111', marginBottom: '6px' }}>{item.course?.title || "Unknown Course"}</div><div style={{ fontSize: '13px', color: '#666' }}>{item.center?.name || "Unknown Center"}</div><div style={{ textAlign: 'right', fontWeight: '900', color: '#0054A6', fontSize: '15px', marginTop: '15px' }}>{item.course?.price ? `${Number(item.course.price).toLocaleString('en-US')} MMK` : "0 MMK"}</div></div>
     )) : (<div style={{ textAlign: 'center', padding: '40px 20px' }}><p style={{ color: '#888', fontWeight: '600' }}>No enrollment history found.</p></div>)}
   </div>
 );
