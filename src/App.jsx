@@ -234,7 +234,11 @@ export default function App() {
             if (data?.result && Array.isArray(data.result) && data.result.length > 0) {
                 extData = data.result[0].result?.userInfo || data.result[0].result || data.result[0].userInfo || data.result[0];
             } else { extData = data?.userInfo || data?.result?.userInfo || data?.result || data; }
-            if (extData) setUserProfile({ name: extData.USER_NICKNAME || extData.name || "miniapp_user", phone: extData.PLAINTEXT_MOBILE_PHONE || extData.phone || "" });
+            if (extData) setUserProfile({
+              name: extData.USER_NICKNAME || extData.name || "miniapp_user",
+              fullName: extData.fullname || extData.full_name || extData.fullName || extData.name || extData.USER_NICKNAME || "miniapp_user",
+              phone: extData.PLAINTEXT_MOBILE_PHONE || extData.phone || ""
+            });
           } catch (error) {}
         }
       });
@@ -273,7 +277,7 @@ export default function App() {
              <>
                 {currentPage === 'home' && (<HomeView centers={centers} onCardClick={handleCenterClick} onSearch={handleSearch} onCategoryClick={handleCategoryClick} searchQuery={searchQuery} setSearchQuery={setSearchQuery} />)}
                 {currentPage === 'detail' && (<DetailView center={selectedCenter} onBack={() => setCurrentPage('home')} onEnrollClick={handleEnrollmentRequest} />)}
-                {currentPage === 'confirm' && (<ConfirmEnrollView data={enrollmentRequestData} selectedCenter={selectedCenter} onRegister={() => setCurrentPage('registration')} onBack={() => setCurrentPage('detail')} />)}
+                {currentPage === 'confirm' && (<ConfirmEnrollView data={enrollmentRequestData} selectedCenter={selectedCenter} userProfile={userProfile} onRegister={() => setCurrentPage('registration')} onBack={() => setCurrentPage('detail')} />)}
                 {currentPage === 'registration' && (<RegistrationFormView userProfile={userProfile} enrollmentData={enrollmentRequestData} onConfirm={handleConfirmEnrollment} onBack={() => setCurrentPage('confirm')} />)}
                 {currentPage === 'success' && (<PaymentSuccessView result={enrollmentResult} selectedCenter={selectedCenter} onDone={() => {setCurrentPage('home');setEnrollmentResult(null);}} />)}
                 {currentPage === 'menu' && (<MenuView onBack={() => setCurrentPage('home')} onCourseClick={() => setCurrentPage('courses')} onSchoolClick={() => setCurrentPage('schools')} onHistoryClick={() => setCurrentPage('history')} onAboutClick={() => setCurrentPage('about')} onContactClick={() => setCurrentPage('contact')} />)}
@@ -545,10 +549,11 @@ const RegistrationFormView = ({ userProfile, enrollmentData, onConfirm, onBack }
   );
 };
 
-const ConfirmEnrollView = ({ data, selectedCenter, onRegister, onBack }) => {
+const ConfirmEnrollView = ({ data, selectedCenter, userProfile, onRegister, onBack }) => {
   const summary = data?.summary || {};
   const currentCourse = selectedCenter?.courses?.find(c => c.title === summary.course_name);
   const actualPrice = Array.isArray(currentCourse?.price) ? currentCourse?.price[0] : (currentCourse?.price || 0);
+  const studentName = summary?.student_info?.fullname || summary?.student_info?.full_name || summary?.student_info?.fullName || summary?.student_info?.name || userProfile?.fullName || userProfile?.name || "N/A";
   return (
     <div className="overlay-container">
       <div className="overlay-header">
@@ -562,8 +567,8 @@ const ConfirmEnrollView = ({ data, selectedCenter, onRegister, onBack }) => {
         <div style={{ marginBottom: '30px' }}>
           <div className="summary-row"><span className="summary-label"><MapPin size={16} /> Center Name</span><span className="summary-value">{selectedCenter?.name || "N/A"}</span></div>
           <div className="summary-row"><span className="summary-label"><BookOpenText size={16} /> Course</span><span className="summary-value" style={{ color: '#0054A6' }}>{summary.course_name || "N/A"}</span></div>
-          <div className="summary-row"><span className="summary-label"><User size={16} /> Student Name</span><span className="summary-value">{summary.student_info?.name || "User"}</span></div>
-          <div className="summary-row" style={{ borderBottom: 'none', marginTop: '10px' }}><span className="summary-label" style={{ fontSize: '16px', color: '#111' }}>Total Amount</span><span className="summary-value" style={{ fontSize: '18px', color: '#0054A6' }}>{Number(actualPrice).toLocaleString()} MMK</span></div>
+          <div className="summary-row"><span className="summary-label"><User size={16} /> Student Name</span><span className="summary-value">{studentName}</span></div>
+          <div className="summary-row" style={{ borderBottom: 'none', marginTop: '10px' }}><span className="summary-label" style={{ fontSize: '16px', color: '#111' }}>Total Amount</span><span className="summary-value" style={{ fontSize: '18px', color: '#0054A6' }}>{Number(actualPrice).toLocaleString('en-US')} MMK</span></div>
         </div>
         <div style={{ display: 'flex', gap: '15px', marginTop: 'auto' }}>
             <button onClick={onBack} className="clickable" style={{ flex: 1, backgroundColor: '#f0f0f0', color: '#333', border: 'none', padding: '16px', borderRadius: '16px', fontWeight: 'bold', fontSize: '15px' }}>Back</button>
