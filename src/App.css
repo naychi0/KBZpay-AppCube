@@ -1,0 +1,389 @@
+/* =========================================
+   🌟 PROFESSIONAL FONT & BASE STYLES 🌟
+   ========================================= */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  /* Font တစ်မျိုးတည်းကိုသာ အသုံးပြုရန် */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+body {
+  background-color: #e5e5e5;
+  display: flex;
+  justify-content: center;
+  -webkit-font-smoothing: antialiased;
+}
+
+.browser-center-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+}
+
+.phone-container {
+  width: 100%;
+  max-width: 430px; 
+  height: 100vh;
+  background-color: #F8F9FC;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 0 30px rgba(0,0,0,0.1);
+}
+
+.scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none; 
+}
+.scroll-container::-webkit-scrollbar {
+  display: none; 
+}
+
+.clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.clickable:active {
+  opacity: 0.7;
+  transform: scale(0.98);
+}
+
+/* =========================================
+   🌟 HEADER & STICKY SEARCH STYLES 🌟
+   ========================================= */
+.header {
+  padding: 20px 20px 15px;
+  flex-shrink: 0;
+  z-index: 100;
+  background-color: #0054A6;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-title {
+  font-size: 16px;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: 1px;
+  color: white;
+}
+
+/* Scroll ဆွဲရင် အပေါ်မှာ ကပ်နေမည့် Search Bar */
+.sticky-search-section {
+  position: sticky;
+  top: 0px;
+  z-index: 99;
+  background-color: #0054A6;
+  /* 🌟 ပြင်ဆင်ချက် (၁): ဘယ်ညာ Padding ကို 25px စီ တူတူထားလိုက်လို့ အလယ်မှာ သပ်သပ်ရပ်ရပ်လေး ဖြစ်သွားပါမယ် 🌟 */
+  padding: 5px 25px 20px 25px; 
+  /* 🌟 အပြာရောင် နောက်ခံရဲ့ အောက်ခြေကို နည်းနည်းပိုပြီး လုံးဝန်းအောင် 25px ထိ တင်လိုက်ပါတယ် 🌟 */
+  border-radius: 0 0 25px 25px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.search-container {
+  position: relative;
+  width: 100%;
+}
+
+.search-icon-pos {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 🌟 ပြင်ဆင်ချက် (၂): Icon ကို သေးချင်ရင် ဒီအကွက်လေးကို အသစ်ထည့်ပေးရပါမယ် 🌟 */
+.search-icon-pos svg {
+  width: 16px; 
+  height: 16px;
+  color: #999;
+}
+
+/* Search Bar ကို နည်းနည်း သေးလိုက်ပါပြီ */
+.search-input {
+  width: 100%;
+  height: 38px; /* 🌟 အမြင့်ကို သေသေချာချာ သတ်မှတ်လိုက်ပါတယ် 🌟 */
+  padding: 0 15px 0 42px; 
+  /* 🌟 ပြင်ဆင်ချက် (၃): 16px အစား 50px လို့ ပြောင်းလိုက်ရင် ပုံ (၂) ကလို ဆေးတောင့်ပုံစံ (Pill Shape) လုံးဝန်းသွားပါပြီ 🌟 */
+  border-radius: 50px; 
+  border: none;
+  font-size: 13px;
+  background-color: white;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  outline: none;
+  color: #333;
+}
+
+.search-input::placeholder {
+  color: #999;
+}
+
+/* =========================================
+   🌟 CATEGORIES & CARDS 🌟
+   ========================================= */
+.section {
+  padding: 20px;
+}
+
+.section-title {
+  font-size: 17px;
+  font-weight: 800;
+  margin-bottom: 18px;
+  color: #111;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.category-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.icon-wrapper {
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #EAF7FC;
+  box-shadow: 0 4px 10px rgba(0,84,166,0.05);
+}
+
+.center-card {
+  background: white;
+  border-radius: 20px;
+  padding: 16px;
+  margin-bottom: 15px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+  border: 1px solid #f2f2f2;
+}
+
+.card-content {
+  display: flex;
+  gap: 15px;
+}
+
+.card-image {
+  width: 80px;
+  height: 80px;
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+.card-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.center-name {
+  font-size: 15px;
+  font-weight: 800;
+  margin: 0 0 6px 0;
+  color: #111;
+}
+
+.center-location, .center-rating {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+/* =========================================
+   🌟 PREMIUM MENU STYLES 🌟
+   ========================================= */
+.menu-container {
+  background-color: #F8F9FC;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-list-wrapper {
+  padding: 20px;
+  margin-top: 10px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 18px 20px;
+  background-color: white;
+  margin-bottom: 12px;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.menu-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,84,166,0.06);
+}
+
+.menu-icon-bg {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background-color: #EAF7FC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 15px;
+  color: #0054A6;
+}
+
+.menu-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: #333;
+  flex: 1;
+}
+
+/* =========================================
+   🌟 BOTTOM SHEET OVERLAYS (Payment/Forms) 🌟
+   ========================================= */
+.overlay-container {
+  background-color: #0054A6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.overlay-header {
+  padding: 30px 25px;
+  color: white;
+  flex-shrink: 0;
+  min-height: 170px;
+}
+
+.progress-bar-container {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.progress-dash {
+  height: 4px;
+  border-radius: 2px;
+  background-color: rgba(255, 255, 255, 0.3);
+  flex: 1;
+}
+
+.progress-dash.active {
+  background-color: #ffffff;
+}
+
+.overlay-card {
+  background-color: #ffffff;
+  border-radius: 30px 30px 0 0;
+  flex-grow: 1;
+  padding: 30px 25px;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.modern-input-container {
+  margin-bottom: 22px;
+}
+
+.modern-input-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.modern-input-group {
+  display: flex;
+  align-items: center;
+  border-bottom: 1.5px solid #eaeaea;
+  padding: 10px 0;
+  transition: border-color 0.3s ease;
+}
+
+.modern-input-group:focus-within {
+  border-bottom-color: #0054A6;
+}
+
+.modern-input-group svg {
+  margin-right: 15px;
+  color: #888;
+}
+
+.modern-input-group input {
+  border: none;
+  outline: none;
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+  background: transparent;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px dashed #f0f0f0;
+}
+
+.summary-label {
+  color: #777;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.summary-value {
+  color: #111;
+  font-weight: 800;
+  font-size: 14px;
+  text-align: right;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #0054A6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
