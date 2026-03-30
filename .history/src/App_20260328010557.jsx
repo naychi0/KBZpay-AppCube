@@ -815,7 +815,7 @@ const handlePayment = async (payData) => {
     useMiniResultFlag: true, // KBZPay ရဲ့ Payment Success စာမျက်နှာကို သုံးမယ်လို့ ပြောတာ
   }, (res) => {
     if (res.resultCode == 1) {
-      // ပိုက်ဆံချေတာ အောင်မြင်သွားရင် လုပ်ချင်တာ ဆက်လုပ်ပါ
+    // ပိုက်ဆံချေတာ အောင်မြင်သွားရင် လုပ်ချင်တာ ဆက်လုပ်ပါ
       console.log("Payment Successful!");
       setCurrentPage('success'); 
     } else {
