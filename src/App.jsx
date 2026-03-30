@@ -10,6 +10,7 @@ const getApiUrl = (path) => {
   return `https://uat-miniapp.kbzpay.com${path}`; 
 };
 
+
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [searchQuery, setSearchQuery] = useState('');
@@ -167,7 +168,7 @@ export default function App() {
       const response = await fetch(requestUrl, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json', 'client_id': import.meta.env.VITE_CLIENT_ID },
-        body: JSON.stringify({ center_id: centerId, course_id: courseId, fullname: "kyaw kyaw" })
+        body: JSON.stringify({ center_id: centerId, course_id: courseId })
       });
       const data = await response.json();
       if (!response.ok) {
@@ -561,7 +562,8 @@ const ConfirmEnrollView = ({ data, selectedCenter, onRegister, onBack }) => {
         <div style={{ marginBottom: '30px' }}>
           <div className="summary-row"><span className="summary-label"><MapPin size={16} /> Center Name</span><span className="summary-value">{selectedCenter?.name || "N/A"}</span></div>
           <div className="summary-row"><span className="summary-label"><BookOpenText size={16} /> Course</span><span className="summary-value" style={{ color: '#0054A6' }}>{summary.course_name || "N/A"}</span></div>
-          <div className="summary-row"><span className="summary-label"><User size={16} /> Student Name</span><span className="summary-value">{summary.student_info?.name || "User"}</span></div>
+          {/* TODO: please insert fullname from autologin instead of "Kyaw Kyaw" */}
+          <div className="summary-row"><span className="summary-label"><User size={16} /> Student Name</span><span className="summary-value">Kyaw Kyaw</span></div>
           <div className="summary-row" style={{ borderBottom: 'none', marginTop: '10px' }}><span className="summary-label" style={{ fontSize: '16px', color: '#111' }}>Total Amount</span><span className="summary-value" style={{ fontSize: '18px', color: '#0054A6' }}>{Number(actualPrice).toLocaleString()} MMK</span></div>
         </div>
         <div style={{ display: 'flex', gap: '15px', marginTop: 'auto' }}>
