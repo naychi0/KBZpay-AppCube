@@ -181,7 +181,7 @@ export default function App() {
     } catch (error) {} finally { setLoading(false); }
   };
 
-  const handleConfirmEnrollment = async () => {
+ const handleConfirmEnrollment = async () => {
     setLoading(true);
     const appCubeOrderApiUrl = getApiUrl("/service/ABH008_KST__Education/1.0.0/payment"); 
     const summary = enrollmentRequestData?.result?.summary || enrollmentRequestData?.summary || {};
@@ -199,11 +199,17 @@ export default function App() {
       const rawData = await response.json(); 
       const orderData = rawData.result || rawData;
 
+      // 🌟 ဒီမှာ if လေး ပြန်ထည့်ပေးထားပါတယ် 🌟
       if (window.ma && window.ma.callNativeAPI) {
         window.ma.callNativeAPI("startPay", {
-          prepayId: orderData.preOrderId, orderInfo: orderData.orderInfo.orderInfo, sign: orderData.orderInfo.sign, signType: orderData.orderInfo.signType || "SHA256", useMiniResultFlag: true, 
+          prepayId: orderData.preOrderId, 
+          orderInfo: orderData.orderInfo.orderInfo, 
+          sign: orderData.orderInfo.sign, 
+          signType: orderData.orderInfo.signType || "SHA256", 
+          useMiniResultFlag: true, 
         }, (res) => {
-          if (res.resultCode == 1 || res.resultCode == "1") {
+          
+          if (res.resultCode == 1 || res.resultCode == "1" || res.resultCode === "SUCCESS") {
             const successApiUrl = getApiUrl("/service/ABH008_KST__Education/1.0.1/payment/success");
             const enrollId = enrollmentRequestData?.result?.id || enrollmentRequestData?.id || summary?.id;
             fetch(successApiUrl, {
@@ -211,16 +217,28 @@ export default function App() {
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}`, 'client_id': import.meta.env.VITE_CLIENT_ID },
               body: JSON.stringify({ transaction_id: orderData.preOrderId, enrollment_id: enrollId })
             }).then(r => r.json()).catch(e => console.log(e));
-            setEnrollmentResult({ ...orderData, course_name: summary.course_name }); setCurrentPage('success'); 
-          } else alert("Payment was cancelled or failed.");
+            
+            setEnrollmentResult({ ...orderData, course_name: summary.course_name }); 
+            setCurrentPage('success'); 
+            
+          } else {
+            // 🌟 Error ပြမယ့် Alert 🌟
+            alert("Payment Failed. Reason: " + JSON.stringify(res));
+            setCurrentPage('confirm'); 
+          }
         });
       } else {
-        setEnrollmentResult({ ...orderData, course_name: summary.course_name }); setCurrentPage('success');
+        // KBZPay App အပြင်ဘက် (ဥပမာ Browser) မှာ စမ်းရင် အလိုလို Success ဖြစ်သွားအောင်ပါ
+        setEnrollmentResult({ ...orderData, course_name: summary.course_name }); 
+        setCurrentPage('success');
       }
-    } catch (error) { alert("Something went wrong with the payment."); } finally { setLoading(false); }
+    } catch (error) { 
+      alert("Something went wrong with the payment."); 
+    } finally { 
+      setLoading(false); 
+    }
   };
-
-  const handleAutoLogin = (currentAuthToken) => {
+ const handleAutoLogin = (currentAuthToken) => {
     if (window.ma && window.ma.getAuthCode) {
       window.ma.getAuthCode({
         scopes: ['USER_NICKNAME', 'PLAINTEXT_MOBILE_PHONE'], 
@@ -232,19 +250,31 @@ export default function App() {
               body: JSON.stringify({ authCode: res.authCode })
             });
             const data = await response.json();
+            
+            // 🌟 ဒီအပိုင်းလေး ပျောက်သွားလို့ Error တက်တာပါ 🌟
             let extData = null;
             if (data?.result && Array.isArray(data.result) && data.result.length > 0) {
                 extData = data.result[0].result?.userInfo || data.result[0].result || data.result[0].userInfo || data.result[0];
-            } else { extData = data?.userInfo || data?.result?.userInfo || data?.result || data; }
-            if (extData) setUserProfile({
-              name: extData.USER_NICKNAME || extData.name || "miniapp_user",
-              fullName: extData.fullname || extData.full_name || extData.fullName || extData.name || extData.USER_NICKNAME || "miniapp_user",
-              phone: extData.PLAINTEXT_MOBILE_PHONE || extData.phone || ""
-            });
-          } catch (error) {}
+            } else { 
+                extData = data?.userInfo || data?.result?.userInfo || data?.result || data; 
+            }
+
+            // 🌟 ရလာတဲ့ extData ထဲကနေ နာမည်နဲ့ ဖုန်းနံပါတ် (msisdn ပါ ထည့်ပြီး) ယူလိုက်ပါတယ် 🌟
+            if (extData) {
+              setUserProfile({ 
+                name: extData.USER_NICKNAME || extData.name || extData.fullName || "miniapp_user",
+                fullName: extData.fullName || extData.USER_NICKNAME || extData.name || "miniapp_user",
+                phone: extData.msisdn || extData.PLAINTEXT_MOBILE_PHONE || extData.phone || "" 
+              });
+            }
+          } catch (error) {
+              console.error("AutoLogin Error:", error);
+          }
         }
       });
-    } else setUserProfile({ name: "Testing User", phone: "0912345678" });
+    } else { 
+        setUserProfile({ name: "Testing User", fullName: "Testing User", phone: "0912345678" });
+    }
   };
 
   return (
@@ -530,7 +560,7 @@ const MenuView = ({ onBack, onCourseClick, onSchoolClick, onHistoryClick, onAbou
 
 // 🌟 Bottom Sheet Overlays (Forms & Success) 🌟
 const RegistrationFormView = ({ userProfile, enrollmentData, onConfirm, onBack }) => {
-  const student = enrollmentData?.summary?.student_info || userProfile || {};
+  const student = userProfile || enrollmentData?.summary?.student_info || {};
   return (
     <div className="overlay-container">
       <div className="overlay-header">
@@ -542,7 +572,7 @@ const RegistrationFormView = ({ userProfile, enrollmentData, onConfirm, onBack }
       <div className="overlay-card">
         <h3 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '8px', color: '#111' }}>Registration</h3>
         <p style={{ color: '#888', fontSize: '13px', marginBottom: '30px' }}>Please check your credentials to proceed.</p>
-        <div className="modern-input-container"><span className="modern-input-label">Username</span><div className="modern-input-group"><User size={18} /><input type="text" defaultValue={student.name || ""} placeholder="Enter your name" /></div></div>
+        <div className="modern-input-container"><span className="modern-input-label">Username</span><div className="modern-input-group"><User size={18} /><input type="text" defaultValue={student.fullName || student.name || ""} placeholder="Enter your name" /></div></div>
         <div className="modern-input-container"><span className="modern-input-label">Phone number</span><div className="modern-input-group"><Phone size={18} /><input type="text" defaultValue={student.phone || ""} placeholder="09xxxxxxxxx" /></div></div>
         <div className="modern-input-container" style={{ marginBottom: '40px' }}><span className="modern-input-label">Education Background</span><div className="modern-input-group"><FileText size={18} /><input type="text" defaultValue={student.education_background || "High School Graduate"} placeholder="e.g. B.Sc, High School" /></div></div>
         <button onClick={onConfirm} className="clickable" style={{ backgroundColor: '#0054A6', color: 'white', border: 'none', padding: '16px', borderRadius: '16px', fontWeight: 'bold', fontSize: '15px', marginTop: 'auto' }}>Confirm & Proceed</button>
@@ -555,7 +585,9 @@ const ConfirmEnrollView = ({ data, selectedCenter, userProfile, onRegister, onBa
   const summary = data?.summary || {};
   const currentCourse = selectedCenter?.courses?.find(c => c.title === summary.course_name);
   const actualPrice = Array.isArray(currentCourse?.price) ? currentCourse?.price[0] : (currentCourse?.price || 0);
-  const studentName = summary?.student_info?.fullname || summary?.student_info?.full_name || summary?.student_info?.fullName || summary?.student_info?.name || userProfile?.fullName || userProfile?.name || "N/A";
+  /* ✅ userProfile ကို အရှေ့ဆုံးကထားပါ */
+  const studentName = userProfile?.fullName || userProfile?.name || summary?.student_info?.fullname || summary?.student_info?.name || "N/A";
+  
   return (
     <div className="overlay-container">
       <div className="overlay-header">
@@ -678,9 +710,40 @@ const SchoolListView = ({ centers, onCardClick, searchQuery, setSearchQuery, onS
 const HistoryView = ({ histories }) => (
   <div style={{ padding: '20px' }}>
     <h2 className="section-title">Enrollment History</h2>
-    {histories && histories.length > 0 ? histories.map((item, idx) => (
-      <div key={item.id || idx} className="center-card" style={{ borderLeft: '6px solid #06C270' }}><div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}><span style={{ fontSize: '11px', color: '#888', fontWeight: '700' }}>{item.enrollment_name || `TXN-${item.transaction_id || "Recent"}`}</span><span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', backgroundColor: '#e2fbe8', color: '#06C270', fontWeight: 'bold' }}>{item.status || "Completed"}</span></div><div style={{ fontWeight: '800', fontSize: '16px', color: '#111', marginBottom: '6px' }}>{item.course?.title || "Unknown Course"}</div><div style={{ fontSize: '13px', color: '#666' }}>{item.center?.name || "Unknown Center"}</div><div style={{ textAlign: 'right', fontWeight: '900', color: '#0054A6', fontSize: '15px', marginTop: '15px' }}>{item.course?.price ? `${Number(item.course.price).toLocaleString('en-US')} MMK` : "0 MMK"}</div></div>
-    )) : (<div style={{ textAlign: 'center', padding: '40px 20px' }}><p style={{ color: '#888', fontWeight: '600' }}>No enrollment history found.</p></div>)}
+    {histories && histories.length > 0 ? histories.map((item, idx) => {
+      // Status အပေါ်မူတည်ပြီး အရောင်ရွေးချယ်ခြင်း
+      const isPending = item.status === "PENDING" || !item.transaction_id;
+      const statusColor = isPending ? "#FFA500" : "#06C270"; // အဝါ သို့မဟုတ် အစိမ်း
+      const statusBg = isPending ? "#FFF4E5" : "#e2fbe8";
+      const displayStatus = isPending ? "PENDING" : (item.status || "COMPLETED");
+
+      return (
+        <div key={item.id || idx} className="center-card" style={{ borderLeft: `6px solid ${statusColor}` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <span style={{ fontSize: '11px', color: '#888', fontWeight: '700' }}>
+               {/* 🌟 Transaction ID မရှိရင် Enrollment Name ကိုပဲ သေချာပြပါမယ် 🌟 */}
+              {item.transaction_id ? `TXN-${item.transaction_id}` : (item.enrollment_name || "Recent Enrollment")}
+            </span>
+            <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', backgroundColor: statusBg, color: statusColor, fontWeight: 'bold' }}>
+              {displayStatus}
+            </span>
+          </div>
+          <div style={{ fontWeight: '800', fontSize: '16px', color: '#111', marginBottom: '6px' }}>
+            {item.course?.title || "Unknown Course"}
+          </div>
+          <div style={{ fontSize: '13px', color: '#666' }}>
+            {item.center?.name || "Unknown Center"}
+          </div>
+          <div style={{ textAlign: 'right', fontWeight: '900', color: '#0054A6', fontSize: '15px', marginTop: '15px' }}>
+            {item.course?.price ? `${Number(item.course.price).toLocaleString('en-US')} MMK` : "0 MMK"}
+          </div>
+        </div>
+      );
+    }) : (
+      <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+        <p style={{ color: '#888', fontWeight: '600' }}>No enrollment history found.</p>
+      </div>
+    )}
   </div>
 );
 
