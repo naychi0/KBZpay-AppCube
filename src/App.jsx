@@ -256,7 +256,7 @@ export default function App() {
     } catch (error) {} finally { setLoading(false); }
   };
 
-  const handleConfirmEnrollment = async () => {
+ const handleConfirmEnrollment = async () => {
     setLoading(true);
     const appCubeOrderApiUrl = getApiUrl("/service/ABH008_KST__Education/1.0.0/payment"); 
     const summary = enrollmentRequestData?.result?.summary || enrollmentRequestData?.summary || {};
@@ -271,20 +271,46 @@ export default function App() {
       const rawData = await response.json(); 
       const orderData = rawData.result || rawData;
 
+      // 🌟 ဒီမှာ if လေး ပြန်ထည့်ပေးထားပါတယ် 🌟
       if (window.ma && window.ma.callNativeAPI) {
-        window.ma.callNativeAPI("startPay", { prepayId: orderData.preOrderId, orderInfo: orderData.orderInfo.orderInfo, sign: orderData.orderInfo.sign, signType: orderData.orderInfo.signType || "SHA256", useMiniResultFlag: true, }, (res) => {
-          if (res.resultCode == 1 || res.resultCode == "1") {
+        window.ma.callNativeAPI("startPay", {
+          prepayId: orderData.preOrderId, 
+          orderInfo: orderData.orderInfo.orderInfo, 
+          sign: orderData.orderInfo.sign, 
+          signType: orderData.orderInfo.signType || "SHA256", 
+          useMiniResultFlag: true, 
+        }, (res) => {
+          
+          if (res.resultCode == 1 || res.resultCode == "1" || res.resultCode === "SUCCESS") {
             const successApiUrl = getApiUrl("/service/ABH008_KST__Education/1.0.1/payment/success");
             const enrollId = enrollmentRequestData?.result?.id || enrollmentRequestData?.id || summary?.id;
-            fetch(successApiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}`, 'client_id': import.meta.env.VITE_CLIENT_ID }, body: JSON.stringify({ transaction_id: orderData.preOrderId, enrollment_id: enrollId }) });
-            setEnrollmentResult({ ...orderData, course_name: summary.course_name }); setCurrentPage('success'); 
+            fetch(successApiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}`, 'client_id': import.meta.env.VITE_CLIENT_ID },
+              body: JSON.stringify({ transaction_id: orderData.preOrderId, enrollment_id: enrollId })
+            }).then(r => r.json()).catch(e => console.log(e));
+            
+            setEnrollmentResult({ ...orderData, course_name: summary.course_name }); 
+            setCurrentPage('success'); 
+            
+          } else {
+            // 🌟 Error ပြမယ့် Alert 🌟
+            alert("Payment Failed. Reason: " + JSON.stringify(res));
+            setCurrentPage('confirm'); 
           }
         });
-      } else { setEnrollmentResult({ ...orderData, course_name: summary.course_name }); setCurrentPage('success'); }
-    } catch (error) {} finally { setLoading(false); }
+      } else {
+        // KBZPay App အပြင်ဘက် (ဥပမာ Browser) မှာ စမ်းရင် အလိုလို Success ဖြစ်သွားအောင်ပါ
+        setEnrollmentResult({ ...orderData, course_name: summary.course_name }); 
+        setCurrentPage('success');
+      }
+    } catch (error) { 
+      alert("Something went wrong with the payment."); 
+    } finally { 
+      setLoading(false); 
+    }
   };
-
-  const handleAutoLogin = (currentAuthToken) => {
+ const handleAutoLogin = (currentAuthToken) => {
     if (window.ma && window.ma.getAuthCode) {
       window.ma.getAuthCode({
         scopes: ['USER_NICKNAME', 'PLAINTEXT_MOBILE_PHONE'], 
@@ -296,12 +322,31 @@ export default function App() {
               body: JSON.stringify({ authCode: res.authCode })
             });
             const data = await response.json();
-            let extData = data?.result?.[0]?.result?.userInfo || data?.result?.[0]?.result || data?.userInfo || data?.result || data;
-            if (extData) setUserProfile({ name: extData.USER_NICKNAME || extData.name || "miniapp_user", phone: extData.PLAINTEXT_MOBILE_PHONE || extData.phone || "" });
-          } catch (error) {}
+            
+            // 🌟 ဒီအပိုင်းလေး ပျောက်သွားလို့ Error တက်တာပါ 🌟
+            let extData = null;
+            if (data?.result && Array.isArray(data.result) && data.result.length > 0) {
+                extData = data.result[0].result?.userInfo || data.result[0].result || data.result[0].userInfo || data.result[0];
+            } else { 
+                extData = data?.userInfo || data?.result?.userInfo || data?.result || data; 
+            }
+
+            // 🌟 ရလာတဲ့ extData ထဲကနေ နာမည်နဲ့ ဖုန်းနံပါတ် (msisdn ပါ ထည့်ပြီး) ယူလိုက်ပါတယ် 🌟
+            if (extData) {
+              setUserProfile({ 
+                name: extData.USER_NICKNAME || extData.name || extData.fullName || "miniapp_user",
+                fullName: extData.fullName || extData.USER_NICKNAME || extData.name || "miniapp_user",
+                phone: extData.msisdn || extData.PLAINTEXT_MOBILE_PHONE || extData.phone || "" 
+              });
+            }
+          } catch (error) {
+              console.error("AutoLogin Error:", error);
+          }
         }
       });
-    } else setUserProfile({ name: "Testing User", phone: "0912345678" });
+    } else { 
+        setUserProfile({ name: "Testing User", fullName: "Testing User", phone: "0912345678" });
+    }
   };
 
   return (
@@ -315,7 +360,7 @@ export default function App() {
              <>
                 {currentPage === 'home' && (<HomeView centers={centers} onCardClick={handleCenterClick} onSearch={handleSearch} onCategoryClick={handleCategoryClick} searchQuery={searchQuery} setSearchQuery={setSearchQuery} />)}
                 {currentPage === 'detail' && (<DetailView center={selectedCenter} onBack={() => setCurrentPage('home')} onEnrollClick={handleEnrollmentRequest} />)}
-                {currentPage === 'confirm' && (<ConfirmEnrollView data={enrollmentRequestData} selectedCenter={selectedCenter} onRegister={() => setCurrentPage('registration')} onBack={() => setCurrentPage('detail')} />)}
+                {currentPage === 'confirm' && (<ConfirmEnrollView data={enrollmentRequestData} selectedCenter={selectedCenter} userProfile={userProfile} onRegister={() => setCurrentPage('registration')} onBack={() => setCurrentPage('detail')} />)}
                 {currentPage === 'registration' && (<RegistrationFormView userProfile={userProfile} enrollmentData={enrollmentRequestData} onConfirm={handleConfirmEnrollment} onBack={() => setCurrentPage('confirm')} />)}
                 {currentPage === 'success' && (<PaymentSuccessView result={enrollmentResult} selectedCenter={selectedCenter} onDone={() => {setCurrentPage('home');setEnrollmentResult(null);}} />)}
                 {currentPage === 'menu' && (<MenuView onBack={() => setCurrentPage('home')} onCourseClick={() => setCurrentPage('courses')} onSchoolClick={() => setCurrentPage('schools')} onHistoryClick={() => setCurrentPage('history')} onAboutClick={() => setCurrentPage('about')} onContactClick={() => setCurrentPage('contact')} />)}
@@ -410,13 +455,32 @@ const DetailView = ({ center, onBack, onEnrollClick }) => {
           <iframe title="Center Location" width="100%" height="180" style={{ border: 0, borderRadius: '12px', marginBottom: '12px' }} loading="lazy" allowFullScreen src={`https://maps.google.com/maps?q=${encodeURIComponent(center.name + ' Yangon')}&t=&z=15&ie=UTF8&iwloc=&output=embed`}></iframe>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '0 5px' }}><MapPin size={20} color="#0054A6" style={{ marginTop: '2px', flexShrink: 0 }} /><div><div style={{ fontWeight: '700', fontSize: '14px', color: '#111', marginBottom: '4px' }}>{center.name} Campus</div><div style={{ fontSize: '12px', color: '#666', lineHeight: '1.5' }}>123 Education Street, {center.location || 'Yangon'}, Myanmar</div></div></div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}><h3 className="section-title" style={{ margin: 0 }}>Available Courses</h3><span style={{ fontSize: '12px', fontWeight: '700', color: '#0054A6', backgroundColor: '#EAF7FC', padding: '4px 10px', borderRadius: '12px' }}>{center.courses ? center.courses.length : 0} Courses</span></div>
-        {center.courses && center.courses.length > 0 ? center.courses.map((course, index) => (
-          <div key={index} className="center-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ flex: 1, paddingRight: '10px' }}><div style={{ fontWeight: '800', fontSize: '15px', color: '#111', marginBottom: '8px' }}>{course.title}</div><div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}><span style={{ backgroundColor: '#f5f5f5', color: '#555', padding: '4px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: '600' }}>{course.schedule || 'Sat-Sun'}</span><span style={{ backgroundColor: '#f5f5f5', color: '#555', padding: '4px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: '600' }}>{course.period || '3 Mths'}</span></div><div style={{ fontSize: '12px', color: '#0054A6', fontWeight: '700' }}>By: {course.instructor_name || 'Expert'}</div></div>
-            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '90px' }}><div style={{ fontWeight: '800', fontSize: '15px', color: '#0054A6', marginBottom: '12px' }}>{course.price ? Number(Array.isArray(course.price) ? course.price[0] : course.price).toLocaleString() : 0} <span style={{fontSize:'9px', color:'#888'}}>MMK</span></div><button onClick={() => onEnrollClick(course)} className="clickable confirm-btn" style={{ backgroundColor: '#0054A6', padding: '10px 20px', borderRadius: '15px', fontSize: '12px', color: 'white', border: 'none', fontWeight: 'bold' }}>Enroll</button></div>
-          </div>
-        )) : <p style={{ textAlign: 'center', color: '#888', fontSize: '13px', padding: '20px 0' }}>No courses available.</p>}
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+          <h3 className="section-title" style={{ margin: 0 }}>Available Courses</h3>
+          <span style={{ fontSize: '12px', fontWeight: '700', color: '#0054A6', backgroundColor: '#EAF7FC', padding: '4px 10px', borderRadius: '12px' }}>{center.courses ? center.courses.length : 0} Courses</span>
+        </div>
+
+        {center.courses && center.courses.length > 0 ? (
+          center.courses.map((course, index) => (
+            <div key={index} className="center-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ flex: 1, paddingRight: '10px' }}>
+                <div style={{ fontWeight: '800', fontSize: '15px', color: '#111', marginBottom: '8px' }}>{course.title}</div>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                  <span style={{ backgroundColor: '#f5f5f5', color: '#555', padding: '4px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: '600' }}>{course.schedule || 'Sat-Sun'}</span>
+                  <span style={{ backgroundColor: '#f5f5f5', color: '#555', padding: '4px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: '600' }}>{course.period || '3 Mths'}</span>
+                </div>
+                <div style={{ fontSize: '12px', color: '#0054A6', fontWeight: '700' }}>By: {course.instructor_name || 'Expert'}</div>
+              </div>
+              <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '90px' }}>
+                <div style={{ fontWeight: '800', fontSize: '15px', color: '#0054A6', marginBottom: '12px' }}>{course.price ? Number(Array.isArray(course.price) ? course.price[0] : course.price).toLocaleString('en-US') : 0} <span style={{fontSize:'9px', color:'#888'}}>MMK</span></div>
+                <button onClick={() => onEnrollClick(course)} className="clickable confirm-btn" style={{ backgroundColor: '#0054A6', padding: '10px 20px', borderRadius: '15px', fontSize: '12px', color: 'white', border: 'none', fontWeight: 'bold' }}>Enroll</button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p style={{ textAlign: 'center', color: '#888', fontSize: '13px', padding: '20px 0' }}>No courses available.</p>
+        )}
       </div>
     </div>
   );
@@ -434,13 +498,14 @@ const MenuView = ({ onBack, onCourseClick, onSchoolClick, onHistoryClick, onAbou
 };
 
 const RegistrationFormView = ({ userProfile, enrollmentData, onConfirm, onBack }) => {
-  const student = enrollmentData?.summary?.student_info || userProfile || {};
+  const student = userProfile || enrollmentData?.summary?.student_info || {};
   return (
     <div className="overlay-container">
       <div className="overlay-header"><div style={{ display: 'flex', alignItems: 'center', marginBottom: '25px' }}><ChevronLeft size={28} onClick={onBack} className="clickable" /></div><div style={{ fontSize: '13px', fontWeight: '800', marginBottom: '5px' }}>20% <span style={{ fontWeight: '400', opacity: 0.8 }}>Completed</span></div><h2 style={{ margin: 0, fontSize: '24px', fontWeight: '800' }}>Personal Details</h2><div className="progress-bar-container"><div className="progress-dash active"></div><div className="progress-dash"></div><div className="progress-dash"></div><div className="progress-dash"></div></div></div>
       <div className="overlay-card">
-        <h3 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '8px', color: '#111' }}>Registration</h3><p style={{ color: '#888', fontSize: '13px', marginBottom: '30px' }}>Please check your credentials to proceed.</p>
-        <div className="modern-input-container"><span className="modern-input-label">Username</span><div className="modern-input-group"><User size={18} /><input type="text" defaultValue="Kyaw Kyaw" placeholder="Enter your name" /></div></div>
+        <h3 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '8px', color: '#111' }}>Registration</h3>
+        <p style={{ color: '#888', fontSize: '13px', marginBottom: '30px' }}>Please check your credentials to proceed.</p>
+        <div className="modern-input-container"><span className="modern-input-label">Username</span><div className="modern-input-group"><User size={18} /><input type="text" defaultValue={student.fullName || student.name || ""} placeholder="Enter your name" /></div></div>
         <div className="modern-input-container"><span className="modern-input-label">Phone number</span><div className="modern-input-group"><Phone size={18} /><input type="text" defaultValue={student.phone || ""} placeholder="09xxxxxxxxx" /></div></div>
         <div className="modern-input-container" style={{ marginBottom: '40px' }}><span className="modern-input-label">Education Background</span><div className="modern-input-group"><FileText size={18} /><input type="text" defaultValue={student.education_background || "High School Graduate"} placeholder="e.g. B.Sc, High School" /></div></div>
         <button onClick={onConfirm} className="clickable" style={{ backgroundColor: '#0054A6', color: 'white', border: 'none', padding: '16px', borderRadius: '16px', fontWeight: 'bold', fontSize: '15px', marginTop: 'auto' }}>Confirm & Proceed</button>
@@ -449,7 +514,7 @@ const RegistrationFormView = ({ userProfile, enrollmentData, onConfirm, onBack }
   );
 };
 
-const ConfirmEnrollView = ({ data, selectedCenter, onRegister, onBack }) => {
+const ConfirmEnrollView = ({ data, selectedCenter, userProfile, onRegister, onBack }) => {
   const summary = data?.summary || {};
   const actualPrice = Number(summary.price ?? 0);
   const displayPrice = Number.isFinite(actualPrice) ? actualPrice : 0;
@@ -487,7 +552,7 @@ const PaymentSuccessView = ({ result, selectedCenter, onDone }) => {
         <div style={{ width: '100%', backgroundColor: '#f8f9fa', borderRadius: '20px', padding: '20px', textAlign: 'left', border: '1px solid #eee', marginBottom: '40px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', fontSize: '14px' }}><span style={{ fontWeight: '700', color: '#555' }}>Center</span><span style={{ fontWeight: '800', color: '#111' }}>{selectedCenter?.name || "N/A"}</span></div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', fontSize: '14px' }}><span style={{ fontWeight: '700', color: '#555' }}>Course</span><span style={{ fontWeight: '800', color: '#0054A6' }}>{courseName}</span></div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', borderTop: '1px dashed #ddd', paddingTop: '15px', marginTop: '5px' }}><span style={{ fontWeight: '700', color: '#555' }}>Amount Paid</span><span style={{ fontWeight: '900', color: '#111' }}>{actualPrice ? `${Number(actualPrice).toLocaleString()} MMK` : "0 MMK"}</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', borderTop: '1px dashed #ddd', paddingTop: '15px', marginTop: '5px' }}><span style={{ fontWeight: '700', color: '#555' }}>Amount Paid</span><span style={{ fontWeight: '900', color: '#111' }}>{actualPrice ? `${Number(actualPrice).toLocaleString('en-US')} MMK` : "0 MMK"}</span></div>
         </div>
         <button onClick={onDone} className="clickable" style={{ width: '100%', padding: '16px', borderRadius: '16px', fontSize: '15px', fontWeight: 'bold', border: 'none', backgroundColor: '#0054A6', color: '#fff', marginTop: 'auto' }}>Back to Home</button>
       </div>
@@ -505,22 +570,100 @@ const CourseListView = ({ courses, onEnrollClick, searchQuery, setSearchQuery, o
   </div>
 );
 
-const SchoolListView = ({ centers, onCardClick, searchQuery, setSearchQuery, onSearch }) => (
-  <div style={{ padding: '20px' }}>
-    <div className="search-container"><span className="search-icon-pos"><Search size={14} color="#888" /></span><input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') onSearch(searchQuery); }} className="search-input" placeholder="Search for centers..." /></div>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '25px', marginBottom: '15px' }}><h2 className="section-title" style={{ margin: 0 }}>{searchQuery ? `Results for "${searchQuery}"` : "All Centers"}</h2></div>
-    {centers && centers.length > 0 ? centers.map((center) => (
-      <div key={center.id} className="center-card clickable" onClick={() => onCardClick(center.id)}><div className="card-content"><img src="https://placehold.co/100x80/0054a6/ffffff?text=Center" alt="Center" className="card-image" /><div className="card-text"><h3 className="center-name">{center.name}</h3><div className="center-location"><MapPin size={14} color="#0054A6" style={{ marginRight: '6px'}} /> {center.location || "Yangon"}</div><div className="center-rating"><Star size={14} fill="#ffcc00" color="#ffcc00" strokeWidth={0} style={{ marginRight: '6px'}} /> {center.rating || "4.5"} rating</div></div></div></div>
-    )) : <div style={{ textAlign: 'center', padding: '40px 20px' }}><p style={{ color: '#888', fontWeight: '600' }}>No centers found.</p></div>}
-  </div>
-);
+const SchoolListView = ({ centers, onCardClick, searchQuery, setSearchQuery, onSearch }) => {
+  // 🌟 ကျောင်းနာမည်နဲ့ ပုံများကို တွဲပေးမည့် စာရင်း (Mapping) ကို ဒီမှာ ထည့်လိုက်ပါပြီ 🌟
+  const centerImages = {
+    "Strategy First University": "https://strategyfirst.edu.mm/img/icon/s1st-portrait.png",
+    "Language Center": "https://images.seeklogo.com/logo-png/32/1/wall-street-english-logo-png_seeklogo-324833.png",
+    "KMD Center": "https://www.nccedu.com/wp-content/uploads/2021/03/Untitled-design.png",
+    "default": "https://placehold.co/120x120/0054A6/ffffff?text=KBZPay" 
+  };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <div className="search-container">
+        <span className="search-icon-pos"><Search size={14} color="#888" /></span>
+        <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') onSearch(searchQuery); }} className="search-input" placeholder="Search for centers..." />
+      </div>
+      
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '25px', marginBottom: '15px' }}>
+        <h2 className="section-title" style={{ margin: 0 }}>{searchQuery ? `Results for "${searchQuery}"` : "All Centers"}</h2>
+      </div>
+      
+      {centers && centers.length > 0 ? centers.map((center) => {
+        // 🌟 ကျောင်းနာမည်နဲ့ ကိုက်ညီတဲ့ပုံကို ရှာမယ်။ မတွေ့ရင် default ပုံကို ယူမယ် 🌟
+        const imgSrc = centerImages[center.name] || centerImages["default"];
+
+        return (
+          <div key={center.id} className="center-card clickable" onClick={() => onCardClick(center.id)}>
+            <div className="card-content">
+              {/* 🌟 အသေထည့်ထားတဲ့ Link အစား imgSrc ဆိုပြီး ပြောင်းလိုက်ပါပြီ 🌟 */}
+              <img src={imgSrc} alt={center.name} className="card-image" />
+              <div className="card-text">
+                <h3 className="center-name">{center.name}</h3>
+                <div className="center-location">
+                  <MapPin size={14} color="#0054A6" style={{ marginRight: '6px'}} /> {center.location || "Yangon"}
+                </div>
+                <div className="center-rating">
+                  <Star size={14} fill="#ffcc00" color="#ffcc00" strokeWidth={0} style={{ marginRight: '6px'}} /> {center.rating || "4.5"} rating
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }) : (
+        <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+          <p style={{ color: '#888', fontWeight: '600' }}>No centers found.</p>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const HistoryView = ({ histories }) => (
   <div style={{ padding: '20px' }}>
     <h2 className="section-title">Enrollment History</h2>
-    {histories && histories.length > 0 ? histories.map((item, idx) => (
-      <div key={item.id || idx} className="center-card" style={{ borderLeft: '6px solid #06C270' }}><div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}><span style={{ fontSize: '11px', color: '#888', fontWeight: '700' }}>{item.student_name || item.enrollment_name || `TXN-${item.transaction_id || "Recent"}`}</span><span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', backgroundColor: '#e2fbe8', color: '#06C270', fontWeight: 'bold' }}>{item.status || "Completed"}</span></div><div style={{ fontWeight: '800', fontSize: '16px', color: '#111', marginBottom: '6px' }}>{item.course?.title || "Unknown Course"}</div><div style={{ fontSize: '13px', color: '#666' }}>{item.center?.name || "Unknown Center"}</div><div style={{ textAlign: 'right', fontWeight: '900', color: '#0054A6', fontSize: '15px', marginTop: '15px' }}>{item.course?.price ? `${Number(item.course.price).toLocaleString()} MMK` : "0 MMK"}</div></div>
-    )) : <div style={{ textAlign: 'center', padding: '40px 20px' }}><p style={{ color: '#888', fontWeight: '600' }}>No enrollment history found.</p></div>}
+    {histories && histories.length > 0 ? histories.map((item, idx) => {
+      // Status အပေါ်မူတည်ပြီး အရောင်ရွေးချယ်ခြင်း
+      const isPending = item.status === "PENDING" || !item.transaction_id;
+      const statusColor = isPending ? "#FFA500" : "#06C270"; // အဝါ သို့မဟုတ် အစိမ်း
+      const statusBg = isPending ? "#FFF4E5" : "#e2fbe8";
+      const displayStatus = isPending ? "PENDING" : (item.status || "COMPLETED");
+
+      return (
+        <div key={item.id || idx} className="center-card" style={{ borderLeft: `6px solid ${statusColor}` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <span style={{ fontSize: '11px', color: '#888', fontWeight: '700' }}>
+               {/* 🌟 Transaction ID မရှိရင် Enrollment Name ကိုပဲ သေချာပြပါမယ် 🌟 */}
+              {item.transaction_id ? `TXN-${item.transaction_id}` : (item.enrollment_name || "Recent Enrollment")}
+            </span>
+            <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', backgroundColor: statusBg, color: statusColor, fontWeight: 'bold' }}>
+              {displayStatus}
+            </span>
+          </div>
+          <div style={{ fontWeight: '800', fontSize: '16px', color: '#111', marginBottom: '6px' }}>
+            {item.course?.title || "Unknown Course"}
+          </div>
+          <div style={{ fontSize: '13px', color: '#666' }}>
+            {item.center?.name || "Unknown Center"}
+          </div>
+          <div style={{ textAlign: 'right', fontWeight: '900', color: '#0054A6', fontSize: '15px', marginTop: '15px' }}>
+            {item.course?.price ? `${Number(item.course.price).toLocaleString('en-US')} MMK` : "0 MMK"}
+          </div>
+        </div>
+      );
+    }) : (
+      <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+        <p style={{ color: '#888', fontWeight: '600' }}>No enrollment history found.</p>
+      </div>
+    )}
+  </div>
+);
+
+const FloatingChat = ({ isChatOpen, setIsChatOpen }) => (
+  <div style={{ position: 'absolute', bottom: '20px', right: '20px', zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+    {isChatOpen && (<div style={{ width: '280px', height: '350px', backgroundColor: 'white', borderRadius: '20px', boxShadow: '0 10px 40px rgba(0,0,0,0.15)', marginBottom: '15px', display: 'flex', flexDirection: 'column', overflow: 'hidden', border: '1px solid #eee' }}><div style={{ backgroundColor: '#0054A6', padding: '15px 20px', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span style={{ fontWeight: '800', fontSize: '15px' }}>Support Chat</span><X size={20} className="clickable" onClick={() => setIsChatOpen(false)} /></div><div style={{ flex: 1, padding: '20px', backgroundColor: '#f9f9f9', display: 'flex', flexDirection: 'column' }}><div style={{ backgroundColor: '#e6f2ff', padding: '12px 16px', borderRadius: '15px', borderBottomLeftRadius: '0', maxWidth: '85%', alignSelf: 'flex-start', color: '#333', fontSize: '13px', lineHeight: '1.5' }}>Hello! 👋 How can we help you with your educational journey today?</div><p style={{ fontSize: '11px', color: '#999', textAlign: 'center', marginTop: 'auto' }}>Replies usually within 5 mins.</p></div><div style={{ padding: '10px 15px', backgroundColor: 'white', borderTop: '1px solid #eee', display: 'flex', gap: '10px', alignItems: 'center' }}><input type="text" placeholder="Type a message..." style={{ flex: 1, padding: '10px 15px', borderRadius: '20px', border: '1px solid #ddd', fontSize: '13px', outline: 'none' }} /><div style={{ backgroundColor: '#0054A6', width: '38px', height: '38px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }} className="clickable"><Send size={16} /></div></div></div>)}
+    <div className="clickable" onClick={() => setIsChatOpen(!isChatOpen)} style={{ width: '56px', height: '56px', backgroundColor: '#0054A6', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'white', boxShadow: '0 8px 20px rgba(0, 84, 166, 0.4)', transition: 'transform 0.2s ease' }}>{isChatOpen ? <X size={28} /> : <MessageCircle size={28} />}</div>
   </div>
 );
 
